@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "granite dev",
     "build": "ait build",
+    "vercel-build": "vite build",
     "deploy": "ait deploy",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "@apps-in-toss/web-framework": "^2.5.0",
@@ -25,6 +27,7 @@
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "dotenv": "^17.4.2",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",

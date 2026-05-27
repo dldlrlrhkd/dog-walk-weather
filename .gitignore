@@ -6,3 +6,6 @@ dist
 *.ait
 *.log
 .DS_Store
+
+.vercel
+.env*
