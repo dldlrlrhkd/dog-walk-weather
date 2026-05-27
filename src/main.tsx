@@ -1,4 +1,3 @@
-import { TDSMobileAITProvider } from "@toss/tds-mobile-ait";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -7,15 +6,22 @@ import App from "./App.tsx";
 import "./index.css";
 
 const isInTossApp = typeof window !== 'undefined' && 'ReactNativeWebView' in window;
+const rootEl = document.getElementById("root")!;
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    {isInTossApp ? (
-      <TDSMobileAITProvider brandPrimaryColor={config.brand.primaryColor}>
-        <App />
-      </TDSMobileAITProvider>
-    ) : (
+if (isInTossApp) {
+  import("@toss/tds-mobile-ait").then(({ TDSMobileAITProvider }) => {
+    createRoot(rootEl).render(
+      <StrictMode>
+        <TDSMobileAITProvider brandPrimaryColor={config.brand.primaryColor}>
+          <App />
+        </TDSMobileAITProvider>
+      </StrictMode>,
+    );
+  });
+} else {
+  createRoot(rootEl).render(
+    <StrictMode>
       <App />
-    )}
-  </StrictMode>,
-);
+    </StrictMode>,
+  );
+}
