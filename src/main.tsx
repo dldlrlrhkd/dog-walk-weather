@@ -6,10 +6,16 @@ import config from "../granite.config.ts";
 import App from "./App.tsx";
 import "./index.css";
 
+const isInTossApp = typeof window !== 'undefined' && 'ReactNativeWebView' in window;
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <TDSMobileAITProvider brandPrimaryColor={config.brand.primaryColor}>
+    {isInTossApp ? (
+      <TDSMobileAITProvider brandPrimaryColor={config.brand.primaryColor}>
+        <App />
+      </TDSMobileAITProvider>
+    ) : (
       <App />
-    </TDSMobileAITProvider>
+    )}
   </StrictMode>,
 );
