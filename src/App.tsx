@@ -102,6 +102,18 @@ export default function App() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      {userKey && (
+        <div style={{
+          position: 'fixed', top: 4, right: 4, zIndex: 9999,
+          fontSize: 10, padding: '2px 6px', borderRadius: 4,
+          fontFamily: 'monospace',
+          background: userKey.startsWith('toss-') ? 'rgba(0,128,0,0.7)' : 'rgba(0,0,0,0.6)',
+          color: 'white', maxWidth: 220, overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {userKey.startsWith('toss-') ? 'TOSS' : 'LOCAL'} · {userKey.slice(0, 24)}
+        </div>
+      )}
       {step === 'welcome'     && <Welcome onStart={() => setStep('name')}/>}
       {step === 'name'        && <StepName value={name} onChange={setName} onBack={() => hasExistingDog ? setStep('main') : setStep('welcome')} onNext={() => setStep('age')}/>}
       {step === 'age'         && <StepAge value={age} onChange={setAge} onBack={() => setStep('name')} onNext={() => setStep('size')} name={name || '우리 아이'}/>}
