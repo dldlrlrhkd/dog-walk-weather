@@ -134,19 +134,22 @@ export default function App() {
     try {
       const { loadFullScreenAd, showFullScreenAd } = await import('@apps-in-toss/web-framework');
       if (!showFullScreenAd.isSupported()) {
-        // 토스 앱 아님 → 광고 없이 바로 진행
+        alert('[광고 디버그] showFullScreenAd 미지원 → 광고 없이 진행');
         await stampToday();
         setStep('walk-record');
         return;
       }
+      alert('[광고 디버그 1/3] 광고 로드 시작…');
       const stopLoad = loadFullScreenAd({
         options: { adGroupId: REWARD_AD_ID },
         onEvent: (e) => {
+          alert(`[광고 디버그 2/3] load 이벤트: ${e.type}`);
           if (e.type === 'loaded') {
             stopLoad();
             const stopShow = showFullScreenAd({
               options: { adGroupId: REWARD_AD_ID },
               onEvent: async (showEvent) => {
+                alert(`[광고 디버그 3/3] show 이벤트: ${showEvent.type}`);
                 if (showEvent.type === 'userEarnedReward') {
                   await stampToday();
                   setStep('walk-record');
@@ -155,14 +158,20 @@ export default function App() {
                   stopShow();
                 }
               },
-              onError: (err) => { console.error('[ad] reward show failed:', err); stopShow(); },
+              onError: (err) => {
+                alert(`[광고 디버그] show 실패: ${String(err).slice(0, 200)}`);
+                stopShow();
+              },
             });
           }
         },
-        onError: (err) => { console.error('[ad] reward load failed:', err); stopLoad(); },
+        onError: (err) => {
+          alert(`[광고 디버그] load 실패: ${String(err).slice(0, 200)}`);
+          stopLoad();
+        },
       });
     } catch (err) {
-      console.warn('[ad] SDK unavailable, walking without ad:', err);
+      alert(`[광고 디버그] SDK import 실패: ${String(err).slice(0, 200)}`);
       await stampToday();
       setStep('walk-record');
     }
