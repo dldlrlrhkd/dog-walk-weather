@@ -126,7 +126,12 @@ async function fetchJson(url: string, timeoutMs = 8000) {
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const r = await fetch(url, { signal: ctrl.signal });
-    return await r.json();
+    const text = await r.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { error: `non-JSON (status ${r.status}): ${text.slice(0, 300)}` };
+    }
   } catch (e) {
     return { error: String(e) };
   } finally {
