@@ -23,10 +23,6 @@ export function WalkCalendar({ stamps, today, onComplete, completedToday }: Walk
     <div className="cal-card">
       <div className="cal-head">
         <div className="cal-title">{monthName}</div>
-        <div className="cal-count">
-          <Icon name="paw" size={13} color="var(--blue)"/>
-          이번달 산책 {stamps.length}회
-        </div>
       </div>
       <div className="cal-grid cal-dow">
         {['일','월','화','수','목','금','토'].map((d, i) => (
