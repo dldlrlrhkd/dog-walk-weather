@@ -111,7 +111,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .metric .ms.danger { color: var(--red); }
 
 .daily-summary { font-size: 14px; font-weight: 600; color: var(--text-2); letter-spacing: -0.2px; margin: -4px 4px 12px; }
-.banner-ad-slot { margin: 16px 0 0; min-height: 60px; }
+.banner-ad-slot { margin: 16px 0 0; }
 .hourly-wrap { position: relative; margin: 0 -20px; padding: 0 36px; }
 .hourly-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center; color: var(--text-1); border: none; cursor: pointer; padding: 0; z-index: 2; }
 .hourly-nav-btn:active { background: var(--card); }

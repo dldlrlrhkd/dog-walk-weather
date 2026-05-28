@@ -68,7 +68,7 @@ export function BannerAd({ adGroupId }: BannerAdProps) {
   return (
     <div className="banner-ad-slot">
       <div ref={ref} />
-      {status !== 'rendered' && (
+      {import.meta.env.DEV && status !== 'rendered' && (
         <div style={{ fontSize: 10, color: '#999', padding: '4px 8px', textAlign: 'center' }}>
           광고 상태: {status}
         </div>

@@ -131,25 +131,37 @@ export default function App() {
   // "산책 기록하고 포인트 받기" → 광고 보고 → 도장 + 산책 기록 페이지로
   const handleStartWalk = async () => {
     if (!userKey) return;
+
+    // 광고 미지원 환경(구버전 토스 앱, 브라우저 등)이면 광고 건너뛰고 바로 진행
+    const proceedWithoutAd = async () => {
+      await stampToday();
+      setStep('walk-record');
+    };
+
+    let loadFullScreenAd: typeof import('@apps-in-toss/web-framework').loadFullScreenAd;
+    let showFullScreenAd: typeof import('@apps-in-toss/web-framework').showFullScreenAd;
     try {
-      const { loadFullScreenAd, showFullScreenAd } = await import('@apps-in-toss/web-framework');
-      if (!showFullScreenAd.isSupported()) {
-        alert('[광고 디버그] showFullScreenAd 미지원 → 광고 없이 진행');
-        await stampToday();
-        setStep('walk-record');
-        return;
-      }
-      alert('[광고 디버그 1/3] 광고 로드 시작…');
+      const mod = await import('@apps-in-toss/web-framework');
+      loadFullScreenAd = mod.loadFullScreenAd;
+      showFullScreenAd = mod.showFullScreenAd;
+    } catch {
+      return proceedWithoutAd();
+    }
+
+    // isSupported() 자체가 throw할 수 있어서 try로 감쌈
+    let supported = false;
+    try { supported = showFullScreenAd.isSupported(); } catch { supported = false; }
+    if (!supported) return proceedWithoutAd();
+
+    try {
       const stopLoad = loadFullScreenAd({
         options: { adGroupId: REWARD_AD_ID },
         onEvent: (e) => {
-          alert(`[광고 디버그 2/3] load 이벤트: ${e.type}`);
           if (e.type === 'loaded') {
             stopLoad();
             const stopShow = showFullScreenAd({
               options: { adGroupId: REWARD_AD_ID },
               onEvent: async (showEvent) => {
-                alert(`[광고 디버그 3/3] show 이벤트: ${showEvent.type}`);
                 if (showEvent.type === 'userEarnedReward') {
                   await stampToday();
                   setStep('walk-record');
@@ -158,22 +170,19 @@ export default function App() {
                   stopShow();
                 }
               },
-              onError: (err) => {
-                alert(`[광고 디버그] show 실패: ${String(err).slice(0, 200)}`);
-                stopShow();
-              },
+              onError: (err) => { console.error('[ad] reward show failed:', err); stopShow(); },
             });
           }
         },
-        onError: (err) => {
-          alert(`[광고 디버그] load 실패: ${String(err).slice(0, 200)}`);
+        onError: async (err) => {
+          console.error('[ad] reward load failed:', err);
           stopLoad();
+          await proceedWithoutAd();
         },
       });
     } catch (err) {
-      alert(`[광고 디버그] SDK import 실패: ${String(err).slice(0, 200)}`);
-      await stampToday();
-      setStep('walk-record');
+      console.warn('[ad] load call threw, skipping ad:', err);
+      await proceedWithoutAd();
     }
   };
 
