@@ -7,7 +7,7 @@ export function Welcome({ onStart }: WelcomeProps) {
     <div className="welcome fade-enter">
       <div className="welcome-content">
         <div className="hero-art">
-          <img src="/강아지로고 복사.png" alt="강아지 로고" style={{ width: 200, height: 200, objectFit: 'contain', borderRadius: 32 }}/>
+          <img src="/강아지로고 투명.png" alt="강아지 로고" style={{ width: 200, height: 200, objectFit: 'contain' }}/>
         </div>
         <div>
           <h1>오늘 산책,<br/><span className="accent">우리 아이</span>한테 괜찮을까?</h1>

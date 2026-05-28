@@ -238,17 +238,6 @@ export default async function handler(req: Request): Promise<Response> {
       icon: iconFor(currentCondition),
     },
     hourly,
-    // 디버그용
-    debug: {
-      ncstBase, fcstBase, vilageBase,
-      ncstResult: ncstRes?.response?.header ?? (ncstRes?.error ?? 'unknown shape'),
-      fcstResult: fcstRes?.response?.header ?? (fcstRes?.error ?? 'unknown shape'),
-      vilageResult: vilageRes?.response?.header ?? (vilageRes?.error ?? 'unknown shape'),
-      ncstItemCount: ncstItems.length,
-      fcstItemCount: fcstItems.length,
-      vilageItemCount: vilageItems.length,
-      ncstShape: typeof ncstRes === 'object' && ncstRes !== null ? Object.keys(ncstRes).slice(0, 5) : typeof ncstRes,
-    },
   }, 200, hasRealData);
 }
 

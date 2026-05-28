@@ -36,7 +36,7 @@ export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather,
   const dailySummary = buildDailySummary(weather, hourly);
 
   const tempIdealLow = dog.weight < 10 ? 10 : 7;
-  const tempIdealHigh = dog.weight < 10 ? 22 : 20;
+  const tempIdealHigh = dog.weight < 10 ? 20 : 20;
   const tempStatus = weather.feelsLike < tempIdealLow - 6 || weather.feelsLike > tempIdealHigh + 6 ? 'danger'
     : weather.feelsLike < tempIdealLow - 2 || weather.feelsLike > tempIdealHigh + 3 ? 'warn' : 'safe';
   const tempStatusLabel = tempStatus === 'safe' ? '쾌적' : tempStatus === 'warn' ? '주의' : '위험';
@@ -166,6 +166,7 @@ export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather,
             </div>
           </div>
           <div className={`verdict-tag-big ${safety.status}`}>{safety.statusLabel}</div>
+          <div className="verdict-headline">{safety.headline}</div>
           {safety.status === 'danger' && (
             <div className="verdict-hint">⏰ 몇 시간 뒤에는 날씨가 좋아져요</div>
           )}

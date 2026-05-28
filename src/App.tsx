@@ -131,7 +131,7 @@ export default function App() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      {userKey && (
+      {userKey && import.meta.env.DEV && (
         <div style={{
           position: 'fixed', top: 4, right: 4, zIndex: 9999,
           fontSize: 10, padding: '2px 6px', borderRadius: 4,

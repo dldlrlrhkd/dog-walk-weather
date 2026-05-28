@@ -43,14 +43,23 @@ export function computeWalkSafety(weather: Weather, dog: Dog): SafetyResult {
   const reasons: { type: string; msg: string }[] = [];
 
   const idealLow = isSmall ? 10 : isLarge ? 4 : 7;
-  const idealHigh = isSmall ? 22 : isLarge ? 18 : 20;
+  const idealHigh = isSmall ? 20 : isLarge ? 18 : 20;
 
   if (feelsLike > idealHigh) {
     const excess = feelsLike - idealHigh;
     score -= Math.min(60, excess * 4.3);
-    const msg = excess > 14 ? '아스팔트가 너무 뜨거워서 화상 위험이 있어요'
-      : excess > 8 ? '더위로 체온 조절이 힘들 수 있어요'
-      : '조금 더우니 짧게 다녀오세요';
+    let msg: string;
+    if (excess > 14) {
+      msg = '폭염이라 열사병 위험이 있어요, 화장실만 5분 이내로요';
+    } else if (excess > 8) {
+      msg = isSmall
+        ? '더위로 체온 조절이 힘들어요, 10분 이내로 줄여주세요'
+        : '더위로 체온 조절이 힘들어요, 15분 이내로 줄여주세요';
+    } else {
+      msg = isSmall
+        ? '조금 더우니 20분 이내로 다녀오세요'
+        : '조금 더우니 30분 이내로 다녀오세요';
+    }
     reasons.push({ type: 'hot', msg });
   }
   let coldDed = 0;
@@ -58,19 +67,33 @@ export function computeWalkSafety(weather: Weather, dog: Dog): SafetyResult {
     const shortfall = idealLow - feelsLike;
     coldDed = Math.min(55, shortfall * 4.6);
     score -= coldDed;
-    const msg = shortfall > 12 ? '저체온증 위험이 있는 추위예요'
-      : shortfall > 6 ? '체구가 작아 추위에 민감해요'
-      : '쌀쌀하니 옷을 입혀주세요';
+    let msg: string;
+    if (shortfall > 12) {
+      // 혹한
+      msg = isSmall ? '저체온증 위험이 있어요, 화장실만 5분 이내로요'
+        : isLarge ? '저체온증 위험이 있어요, 15분 이내로 줄여주세요'
+        : '저체온증 위험이 있어요, 10분 이내로 줄여주세요';
+    } else if (shortfall > 6) {
+      // 추움
+      msg = isSmall ? '체구가 작아 추위에 민감해요, 10분 이내로 줄여주세요'
+        : isLarge ? '제법 추운 날씨예요, 20분 이내로 줄여주세요'
+        : '추위가 강해요, 15분 이내로 줄여주세요';
+    } else {
+      // 쌀쌀함
+      msg = isSmall ? '쌀쌀하니 옷 입히고 15분 이내로 다녀오세요'
+        : isLarge ? '기온이 낮으니 30분 이내로 다녀오세요'
+        : '기온이 낮으니 20분 이내로 다녀오세요';
+    }
     reasons.push({ type: 'cold', msg });
   }
 
-  if (condition === 'rain') { score -= 22; reasons.push({ type: 'rain', msg: '비가 오니 발 보호와 짧은 외출을 추천해요' }); }
-  if (condition === 'snow') { score -= 18; reasons.push({ type: 'snow', msg: '눈길에 제설제가 있을 수 있어요' }); }
+  if (condition === 'rain') { score -= 22; reasons.push({ type: 'rain', msg: '비가 오니 발 보호하고 15분 이내로 짧게 다녀오세요' }); }
+  if (condition === 'snow') { score -= 18; reasons.push({ type: 'snow', msg: '눈길에 제설제가 있을 수 있어요, 신발을 신겨주세요' }); }
 
-  if (pm > 75)      { score -= 25; reasons.push({ type: 'dust', msg: '미세먼지가 나빠 호흡기에 영향이 있어요' }); }
-  else if (pm > 35) { score -= 10; reasons.push({ type: 'dust', msg: '미세먼지가 보통보다 조금 높아요' }); }
+  if (pm > 75)      { score -= 25; reasons.push({ type: 'dust', msg: '미세먼지가 나빠 호흡기에 영향이 있어요, 10분 이내로 줄여주세요' }); }
+  else if (pm > 35) { score -= 10; reasons.push({ type: 'dust', msg: '미세먼지가 조금 높아요, 20분 이내로 다녀오세요' }); }
 
-  if (uv >= 8) { score -= 12; reasons.push({ type: 'uv', msg: '자외선이 매우 강해요' }); }
+  if (uv >= 8) { score -= 12; reasons.push({ type: 'uv', msg: '자외선이 매우 강해요, 그늘 위주로 20분 이내로 다녀오세요' }); }
 
   if (isSenior) score -= 6;
   if (isSenior && coldDed > 0) score -= 8;
@@ -204,8 +227,6 @@ export async function fetchWeather(apiKey: string): Promise<Weather> {
   const owMain = w.weather?.[0]?.main ?? '';
   const pm = Math.round(air.list?.[0]?.components?.pm2_5 ?? 0);
   const location = w.name ?? '';
-  console.log('[weather] OW location:', w.name);
-  console.log('[weather] KMA debug:', kmaResult?.debug);
 
   // 현재 기온·날씨: KMA 우선, 실패 시 OpenWeather
   let temp: number;
@@ -247,7 +268,6 @@ export async function fetchWeather(apiKey: string): Promise<Weather> {
   let hourly: HourlyData[];
   if (Array.isArray(kmaResult?.hourly) && kmaResult.hourly.length > 0) {
     hourly = kmaResult.hourly;
-    console.log('[weather] KMA hourly:', JSON.stringify(hourly));
   } else {
     console.warn('[weather] KMA hourly empty, falling back to Open-Meteo');
     const meteoHourly = meteoResult?.hourly;

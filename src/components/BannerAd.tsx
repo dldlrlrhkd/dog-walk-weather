@@ -15,14 +15,10 @@ export function BannerAd({ adGroupId }: BannerAdProps) {
     (async () => {
       try {
         const { TossAds } = await import('@apps-in-toss/web-framework');
-        if (!TossAds.attachBanner.isSupported()) {
-          console.log('[ad] TossAds not supported (likely browser)');
-          return;
-        }
+        if (!TossAds.attachBanner.isSupported()) return;
         if (!initialized) {
           TossAds.initialize({
             callbacks: {
-              onInitialized: () => console.log('[ad] TossAds initialized'),
               onInitializationFailed: (err) => console.error('[ad] init failed:', err),
             },
           });
@@ -33,9 +29,7 @@ export function BannerAd({ adGroupId }: BannerAdProps) {
           theme: 'auto',
           variant: 'card',
           callbacks: {
-            onAdRendered: () => console.log('[ad] banner rendered:', adGroupId),
             onAdFailedToRender: (e) => console.warn('[ad] banner failed:', e),
-            onNoFill: () => console.log('[ad] banner no-fill'),
           },
         });
         destroy = result.destroy;
