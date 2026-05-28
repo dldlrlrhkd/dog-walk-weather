@@ -6,6 +6,7 @@ import { StepSize } from './pages/onboarding/StepSize';
 import { StepPhoto } from './pages/onboarding/StepPhoto';
 import { MainScreen } from './pages/main/MainScreen';
 import { WalkRecord } from './pages/main/WalkRecord';
+import { EditDog } from './pages/main/EditDog';
 import { MOCK_WEATHER, fetchWeather } from './utils/weather';
 import type { Weather } from './utils/weather';
 import { resolveUserKey } from './utils/userKey';
@@ -19,7 +20,7 @@ export interface DogProfile {
   photo: string;
 }
 
-type Step = 'welcome' | 'name' | 'age' | 'size' | 'photo' | 'main' | 'walk-record';
+type Step = 'welcome' | 'name' | 'age' | 'size' | 'photo' | 'main' | 'walk-record' | 'edit-dog';
 
 const LEGACY_DOGS_KEY = 'dogProfiles';
 const dogsKeyFor = (userKey: string) => `dogProfiles-${userKey}`;
@@ -85,15 +86,43 @@ export default function App() {
     setStep('name');
   };
 
-  const handleReset = () => {
-    if (userKey) {
-      localStorage.removeItem(dogsKeyFor(userKey));
-      apiSaveDogs(userKey, []);
+  const handleExitApp = async () => {
+    try {
+      const { closeView } = await import('@apps-in-toss/web-framework');
+      await closeView();
+    } catch {
+      // 토스 앱 밖(브라우저)에선 무시
+      console.log('[exit] closeView unavailable (likely browser); ignoring');
     }
-    localStorage.removeItem(LEGACY_DOGS_KEY);
-    setDogs([]); setActiveDogIdx(0);
-    setName(''); setAge(3); setWeight(7); setPhoto('');
-    setStep('welcome');
+  };
+
+  const handleDeleteDog = (idx: number) => {
+    if (!userKey) return;
+    const newDogs = dogs.filter((_, i) => i !== idx);
+    setDogs(newDogs);
+    apiSaveDogs(userKey, newDogs);
+    if (newDogs.length === 0) {
+      setActiveDogIdx(0);
+      setStep('welcome');
+    } else if (idx === activeDogIdx) {
+      setActiveDogIdx(0);
+    } else if (idx < activeDogIdx) {
+      setActiveDogIdx(activeDogIdx - 1);
+    }
+  };
+
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const handleEditDog = (idx: number) => {
+    setEditIdx(idx);
+    setStep('edit-dog');
+  };
+  const handleSaveEdit = (updated: DogProfile) => {
+    if (!userKey || editIdx === null) return;
+    const newDogs = dogs.map((d, i) => (i === editIdx ? updated : d));
+    setDogs(newDogs);
+    apiSaveDogs(userKey, newDogs);
+    setEditIdx(null);
+    setStep('main');
   };
 
   if (!bootLoaded) {
@@ -126,11 +155,20 @@ export default function App() {
           onSwitchDog={setActiveDogIdx}
           onAddDog={dogs.length < 2 ? handleAddDog : undefined}
           weather={weather}
-          onReset={handleReset}
+          onExitApp={handleExitApp}
+          onDeleteDog={handleDeleteDog}
+          onEditDog={handleEditDog}
           onGoToWalkRecord={() => setStep('walk-record')}
         />
       )}
       {step === 'walk-record' && userKey && <WalkRecord dogName={dogs[activeDogIdx]?.name || '보리'} userKey={userKey} onBack={() => setStep('main')}/>}
+      {step === 'edit-dog' && editIdx !== null && dogs[editIdx] && (
+        <EditDog
+          dog={dogs[editIdx]}
+          onCancel={() => { setEditIdx(null); setStep('main'); }}
+          onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 }

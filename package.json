@@ -10,7 +10,8 @@
     "deploy": "ait deploy",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "migrate": "node scripts/migrate.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "db:peek": "node scripts/db-peek.mjs"
   },
   "dependencies": {
     "@apps-in-toss/web-framework": "^2.5.0",

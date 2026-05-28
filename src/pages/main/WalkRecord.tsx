@@ -11,6 +11,7 @@ interface WalkRecordProps {
 }
 
 const ymOf = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
+const REWARD_AD_ID = 'ait.v2.live.c51a7e8d82a147dc';
 
 export function WalkRecord({ dogName, userKey, onBack }: WalkRecordProps) {
   const today = new Date();
@@ -36,17 +37,61 @@ export function WalkRecord({ dogName, userKey, onBack }: WalkRecordProps) {
     return () => clearTimeout(id);
   }, [adState.open, adState.remaining]);
 
-  const handleComplete = () => {
+  const stampToday = () => {
+    if (stamps.includes(today.getDate())) return;
+    const next = [...stamps, today.getDate()].sort((a, b) => a - b);
+    setStamps(next);
+    saveStamps(userKey, yearMonth, next);
+  };
+
+  const handleComplete = async () => {
     if (completedToday) return;
-    setAdState({ open: true, remaining: 5 });
+
+    try {
+      const { loadFullScreenAd, showFullScreenAd } = await import('@apps-in-toss/web-framework');
+
+      if (!showFullScreenAd.isSupported()) {
+        // 토스 앱 환경 아님 → 브라우저 폴백 (가짜 광고 오버레이)
+        setAdState({ open: true, remaining: 5 });
+        return;
+      }
+
+      // 토스 앱: 진짜 리워드 광고 로드 → 시청 완료 시 도장
+      const stopLoad = loadFullScreenAd({
+        options: { adGroupId: REWARD_AD_ID },
+        onEvent: (e) => {
+          if (e.type === 'loaded') {
+            stopLoad();
+            const stopShow = showFullScreenAd({
+              options: { adGroupId: REWARD_AD_ID },
+              onEvent: (showEvent) => {
+                if (showEvent.type === 'userEarnedReward') {
+                  stampToday();
+                }
+                if (showEvent.type === 'dismissed' || showEvent.type === 'failedToShow') {
+                  stopShow();
+                }
+              },
+              onError: (err) => {
+                console.error('[ad] reward show failed:', err);
+                stopShow();
+              },
+            });
+          }
+        },
+        onError: (err) => {
+          console.error('[ad] reward load failed:', err);
+          stopLoad();
+        },
+      });
+    } catch (err) {
+      console.warn('[ad] SDK unavailable, falling back to mock overlay:', err);
+      setAdState({ open: true, remaining: 5 });
+    }
   };
 
   const handleAdClose = () => {
-    if (!completedToday) {
-      const next = [...stamps, today.getDate()].sort((a, b) => a - b);
-      setStamps(next);
-      saveStamps(userKey, yearMonth, next);
-    }
+    stampToday();
     setAdState({ open: false, remaining: 5 });
   };
 
