@@ -3,11 +3,10 @@ import { Icon } from '../../components/Icon';
 interface WalkCalendarProps {
   stamps: number[];
   today: Date;
-  onComplete: () => void;
   completedToday: boolean;
 }
 
-export function WalkCalendar({ stamps, today, onComplete, completedToday }: WalkCalendarProps) {
+export function WalkCalendar({ stamps, today, completedToday }: WalkCalendarProps) {
   const year = today.getFullYear();
   const month = today.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
@@ -46,12 +45,12 @@ export function WalkCalendar({ stamps, today, onComplete, completedToday }: Walk
           );
         })}
       </div>
-      <button className={`cta walk-done${completedToday ? ' done' : ''}`}
-        onClick={onComplete} disabled={completedToday}>
-        {completedToday
-          ? <><Icon name="check" size={20} color="#fff"/>&nbsp;오늘 산책 완료!</>
-          : '산책 기록하고 포인트 받기'}
-      </button>
+      {completedToday && (
+        <div className="walk-done-badge">
+          <Icon name="check" size={16} color="#2C5BFF"/>
+          <span>오늘 산책 완료</span>
+        </div>
+      )}
     </div>
   );
 }

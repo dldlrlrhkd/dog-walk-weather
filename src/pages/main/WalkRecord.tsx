@@ -40,7 +40,6 @@ export function WalkRecord({ dogName, userKey, onBack }: WalkRecordProps) {
           <WalkCalendar
             stamps={stamps}
             today={today}
-            onComplete={() => {}}
             completedToday={completedToday}
           />
         </div>
