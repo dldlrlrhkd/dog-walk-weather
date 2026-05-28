@@ -202,7 +202,7 @@ export async function fetchWeather(apiKey: string): Promise<Weather> {
   );
   const { latitude: lat, longitude: lon } = pos.coords;
 
-  const [weatherRes, airRes, meteoResult, kmaResult] = await Promise.all([
+  const [weatherRes, airRes, meteoResult, kmaResult, kakaoResult] = await Promise.all([
     fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=kr`),
     fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`),
     fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=uv_index&hourly=temperature_2m,precipitation,precipitation_probability,weather_code&timezone=auto&forecast_hours=8`)
@@ -217,6 +217,12 @@ export async function fetchWeather(apiKey: string): Promise<Weather> {
         console.warn('[weather] KMA fetch failed (falling back to OpenWeather):', err);
         return null;
       }),
+    fetch(`/api/kakao-region?lat=${lat}&lon=${lon}`)
+      .then(r => r.json())
+      .catch((err) => {
+        console.warn('[weather] kakao region fetch failed:', err);
+        return null;
+      }),
   ]);
   const w = await weatherRes.json();
   const air = await airRes.json();
@@ -226,7 +232,9 @@ export async function fetchWeather(apiKey: string): Promise<Weather> {
   const feelsLike = Math.round(w.main.feels_like ?? w.main.temp);
   const owMain = w.weather?.[0]?.main ?? '';
   const pm = Math.round(air.list?.[0]?.components?.pm2_5 ?? 0);
-  const location = w.name ?? '';
+  // 동네명: 카카오 로컬(한국 행정동) 우선 → OpenWeather name 폴백
+  const kakaoLocation = typeof kakaoResult?.location === 'string' ? kakaoResult.location : '';
+  const location = kakaoLocation || w.name || '';
 
   // 현재 기온·날씨: KMA 우선, 실패 시 OpenWeather
   let temp: number;
