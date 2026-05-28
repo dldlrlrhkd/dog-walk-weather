@@ -174,7 +174,7 @@ export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather,
                   <Icon name={h.c} size={22} color={i === 0 ? 'white' : hourlyIconColor(h.c)}/>
                 </div>
                 <div className="tmp">{h.t}°</div>
-                <div className="rain">{h.r > 0 ? `${h.r}%` : ''}</div>
+                <div className="rain">{h.r}%</div>
               </div>
             ))}
           </div>
