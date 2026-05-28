@@ -121,14 +121,25 @@ function iconFor(condition: string): string {
   return 'sun';
 }
 
+// Edge 인스턴스 메모리 캐시 (인스턴스가 살아있는 동안 hit)
+const memoryCache = new Map<string, { time: number; data: unknown }>();
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 async function fetchJson(url: string, timeoutMs = 8000) {
+  const now = Date.now();
+  const cached = memoryCache.get(url);
+  if (cached && (now - cached.time) < CACHE_TTL_MS) {
+    return cached.data;
+  }
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const r = await fetch(url, { signal: ctrl.signal });
     const text = await r.text();
     try {
-      return JSON.parse(text);
+      const data = JSON.parse(text);
+      memoryCache.set(url, { time: now, data });
+      return data;
     } catch {
       return { error: `non-JSON (status ${r.status}): ${text.slice(0, 300)}` };
     }
@@ -216,6 +227,9 @@ export default async function handler(req: Request): Promise<Response> {
     };
   });
 
+  // 데이터 있을 때만 캐싱 (rate-limit 오류 응답은 캐싱 X)
+  const hasRealData = hourly.length > 0 || ncstItems.length > 0;
+
   return json({
     grid: { nx, ny },
     current: {
@@ -233,15 +247,18 @@ export default async function handler(req: Request): Promise<Response> {
       ncstItemCount: ncstItems.length,
       fcstItemCount: fcstItems.length,
       vilageItemCount: vilageItems.length,
-      // 첫 응답이 JSON이 아닐 경우 어떤 모양인지 보기
       ncstShape: typeof ncstRes === 'object' && ncstRes !== null ? Object.keys(ncstRes).slice(0, 5) : typeof ncstRes,
     },
-  });
+  }, 200, hasRealData);
 }
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
+function json(data: unknown, status = 200, cacheable = false): Response {
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (cacheable && status === 200) {
+    // Vercel CDN 5분 캐시 + 60초 stale-while-revalidate
+    headers['Cache-Control'] = 'public, s-maxage=300, stale-while-revalidate=60';
+  } else {
+    headers['Cache-Control'] = 'no-store';
+  }
+  return new Response(JSON.stringify(data), { status, headers });
 }
