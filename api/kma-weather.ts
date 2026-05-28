@@ -222,9 +222,14 @@ export default async function handler(req: Request): Promise<Response> {
     // 디버그용
     debug: {
       ncstBase, fcstBase, vilageBase,
-      ncstResultCode: ncstRes?.response?.header?.resultCode,
-      fcstResultCode: fcstRes?.response?.header?.resultCode,
-      vilageResultCode: vilageRes?.response?.header?.resultCode,
+      ncstResult: ncstRes?.response?.header ?? (ncstRes?.error ?? 'unknown shape'),
+      fcstResult: fcstRes?.response?.header ?? (fcstRes?.error ?? 'unknown shape'),
+      vilageResult: vilageRes?.response?.header ?? (vilageRes?.error ?? 'unknown shape'),
+      ncstItemCount: ncstItems.length,
+      fcstItemCount: fcstItems.length,
+      vilageItemCount: vilageItems.length,
+      // 첫 응답이 JSON이 아닐 경우 어떤 모양인지 보기
+      ncstShape: typeof ncstRes === 'object' && ncstRes !== null ? Object.keys(ncstRes).slice(0, 5) : typeof ncstRes,
     },
   });
 }
