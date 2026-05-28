@@ -170,10 +170,6 @@ export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather,
           {safety.status === 'danger' && (
             <div className="verdict-hint">⏰ 몇 시간 뒤에는 날씨가 좋아져요</div>
           )}
-          <div className="bar">
-            <div className={`fill ${safety.status}`} style={{ width: `${safety.score}%` }}/>
-          </div>
-          <div className="ticks"><span>위험</span><span>주의</span><span>안전</span></div>
         </div>
 
         {/* 2. 시간별 예보 */}
