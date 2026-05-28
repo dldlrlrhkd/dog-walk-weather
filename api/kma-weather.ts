@@ -23,7 +23,7 @@ function latLonToGrid(lat: number, lon: number) {
   if (theta < -Math.PI) theta += 2.0 * Math.PI;
   theta *= sn;
   const nx = Math.floor(ra * Math.sin(theta) + XO + 0.5);
-  const ny = Math.floor(-ra * Math.cos(theta) + YO + 0.5);
+  const ny = Math.floor(ro - ra * Math.cos(theta) + YO + 0.5);
   return { nx, ny };
 }
 
