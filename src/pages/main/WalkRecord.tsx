@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Icon } from '../../components/Icon';
 import { WalkCalendar } from './WalkCalendar';
 import { fetchStamps } from '../../utils/api';
 
@@ -65,10 +64,7 @@ export function WalkRecord({ dogName, userKey, onBack }: WalkRecordProps) {
       </div>
 
       <div className="footer-cta">
-        <button className="cta" onClick={onBack}>
-          <Icon name="back" size={20} color="#fff"/>
-          <span style={{ marginLeft: 8 }}>돌아가기</span>
-        </button>
+        <button className="cta" onClick={onBack}>돌아가기</button>
       </div>
     </div>
   );
