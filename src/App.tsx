@@ -10,7 +10,9 @@ import { EditDog } from './pages/main/EditDog';
 import { MOCK_WEATHER, fetchWeather } from './utils/weather';
 import type { Weather } from './utils/weather';
 import { resolveUserKey } from './utils/userKey';
-import { fetchDogs, saveDogs as apiSaveDogs } from './utils/api';
+import { fetchDogs, saveDogs as apiSaveDogs, fetchStamps, saveStamps } from './utils/api';
+
+const REWARD_AD_ID = 'ait.v2.live.c51a7e8d82a147dc';
 import './App.css';
 
 export interface DogProfile {
@@ -86,16 +88,6 @@ export default function App() {
     setStep('name');
   };
 
-  const handleExitApp = async () => {
-    try {
-      const { closeView } = await import('@apps-in-toss/web-framework');
-      await closeView();
-    } catch {
-      // 토스 앱 밖(브라우저)에선 무시
-      console.log('[exit] closeView unavailable (likely browser); ignoring');
-    }
-  };
-
   const handleDeleteDog = (idx: number) => {
     if (!userKey) return;
     const newDogs = dogs.filter((_, i) => i !== idx);
@@ -123,6 +115,57 @@ export default function App() {
     apiSaveDogs(userKey, newDogs);
     setEditIdx(null);
     setStep('main');
+  };
+
+  // 오늘 도장 찍기 (이미 있으면 스킵)
+  const stampToday = async (): Promise<void> => {
+    if (!userKey) return;
+    const today = new Date();
+    const yearMonth = `${today.getFullYear()}-${today.getMonth()}`;
+    const current = await fetchStamps(userKey, yearMonth);
+    if (current.includes(today.getDate())) return;
+    const next = [...current, today.getDate()].sort((a, b) => a - b);
+    await saveStamps(userKey, yearMonth, next);
+  };
+
+  // "산책 기록하고 포인트 받기" → 광고 보고 → 도장 + 산책 기록 페이지로
+  const handleStartWalk = async () => {
+    if (!userKey) return;
+    try {
+      const { loadFullScreenAd, showFullScreenAd } = await import('@apps-in-toss/web-framework');
+      if (!showFullScreenAd.isSupported()) {
+        // 토스 앱 아님 → 광고 없이 바로 진행
+        await stampToday();
+        setStep('walk-record');
+        return;
+      }
+      const stopLoad = loadFullScreenAd({
+        options: { adGroupId: REWARD_AD_ID },
+        onEvent: (e) => {
+          if (e.type === 'loaded') {
+            stopLoad();
+            const stopShow = showFullScreenAd({
+              options: { adGroupId: REWARD_AD_ID },
+              onEvent: async (showEvent) => {
+                if (showEvent.type === 'userEarnedReward') {
+                  await stampToday();
+                  setStep('walk-record');
+                }
+                if (showEvent.type === 'dismissed' || showEvent.type === 'failedToShow') {
+                  stopShow();
+                }
+              },
+              onError: (err) => { console.error('[ad] reward show failed:', err); stopShow(); },
+            });
+          }
+        },
+        onError: (err) => { console.error('[ad] reward load failed:', err); stopLoad(); },
+      });
+    } catch (err) {
+      console.warn('[ad] SDK unavailable, walking without ad:', err);
+      await stampToday();
+      setStep('walk-record');
+    }
   };
 
   if (!bootLoaded) {
@@ -155,10 +198,9 @@ export default function App() {
           onSwitchDog={setActiveDogIdx}
           onAddDog={dogs.length < 2 ? handleAddDog : undefined}
           weather={weather}
-          onExitApp={handleExitApp}
           onDeleteDog={handleDeleteDog}
           onEditDog={handleEditDog}
-          onGoToWalkRecord={() => setStep('walk-record')}
+          onGoToWalkRecord={handleStartWalk}
         />
       )}
       {step === 'walk-record' && userKey && <WalkRecord dogName={dogs[activeDogIdx]?.name || '보리'} userKey={userKey} onBack={() => setStep('main')}/>}

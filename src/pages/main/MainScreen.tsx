@@ -13,13 +13,12 @@ interface MainScreenProps {
   onSwitchDog: (idx: number) => void;
   onAddDog?: () => void;
   weather: Weather;
-  onExitApp: () => void;
   onDeleteDog: (idx: number) => void;
   onEditDog: (idx: number) => void;
   onGoToWalkRecord: () => void;
 }
 
-export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather, onExitApp, onDeleteDog, onEditDog, onGoToWalkRecord }: MainScreenProps) {
+export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather, onDeleteDog, onEditDog, onGoToWalkRecord }: MainScreenProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleDeleteClick = () => {
@@ -64,18 +63,6 @@ export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather,
 
   return (
     <div className="app-shell">
-      <div className="topnav">
-        <button className="icon-btn" onClick={onExitApp}><Icon name="back" size={22}/></button>
-        <div className="nav-title">
-          <Icon name="paw" size={18} color="var(--blue)"/>
-          산책 지수
-        </div>
-        <div className="right-grp">
-          <div className="divider"/>
-          <button className="icon-btn"><Icon name="close" size={18}/></button>
-        </div>
-      </div>
-
       <div className="scroll">
         {/* 프로필 헤더 */}
         <div className="profile-header">
@@ -154,13 +141,13 @@ export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather,
               </div>
             </div>
             <div style={{
-              width: 56, height: 56, borderRadius: '50%',
+              width: 72, height: 72, borderRadius: '50%',
               background: safety.status === 'safe' ? 'var(--green-soft)' : safety.status === 'warn' ? 'var(--orange-soft)' : 'var(--red-soft)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <Icon
                 name={weather.condition === 'rain' ? 'rain' : weather.condition === 'snow' ? 'snow' : weather.condition === 'cloudy' ? 'cloud' : 'sun'}
-                size={28}
+                size={42}
                 color={weather.condition === 'rain' ? '#6B7280' : weather.condition === 'snow' ? '#93C5FD' : weather.condition === 'cloudy' ? '#94A3B8' : '#F59E0B'}
               />
             </div>
@@ -196,9 +183,6 @@ export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather,
           </button>
         </div>
 
-        {/* 배너 광고 */}
-        <BannerAd adGroupId={BANNER_AD_ID} />
-
         {/* 3. 자세히 보기 */}
         <div className="section-title">자세히 보기</div>
         <div className="detail-grid">
@@ -223,6 +207,9 @@ export function MainScreen({ dogs, activeDogIdx, onSwitchDog, onAddDog, weather,
             <div className={`ms ${uvStatus}`}>{uvLabel}</div>
           </div>
         </div>
+
+        {/* 배너 광고 - 자세히 보기 아래로 이동 */}
+        <BannerAd adGroupId={BANNER_AD_ID} />
 
       </div>
 
