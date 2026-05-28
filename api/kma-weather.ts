@@ -1,4 +1,4 @@
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'edge', regions: ['icn1'] };
 
 // 기상청 격자 변환 (Lambert Conformal Conic)
 function latLonToGrid(lat: number, lon: number) {
@@ -27,14 +27,7 @@ function latLonToGrid(lat: number, lon: number) {
   return { nx, ny };
 }
 
-// 한국 표준시(KST) Date — UTC+9
-function getKST(): Date {
-  const now = new Date();
-  return new Date(now.getTime() + (9 * 60 - now.getTimezoneOffset() * -1 + now.getTimezoneOffset()) * 60000);
-  // 단순화: getUTC* 함수로 직접 계산하는 게 안전
-}
-
-// 더 안전한 KST 시각 추출 (UTC 기반)
+// KST 시각 추출 (UTC 기반)
 function getKSTParts() {
   const now = new Date();
   const utcMs = now.getTime();
@@ -128,8 +121,17 @@ function iconFor(condition: string): string {
   return 'sun';
 }
 
-function fetchJson(url: string) {
-  return fetch(url).then(r => r.json()).catch((e) => ({ error: String(e) }));
+async function fetchJson(url: string, timeoutMs = 8000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal });
+    return await r.json();
+  } catch (e) {
+    return { error: String(e) };
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -138,7 +140,7 @@ export default async function handler(req: Request): Promise<Response> {
   const lon = parseFloat(url.searchParams.get('lon') || '');
   if (isNaN(lat) || isNaN(lon)) return json({ error: 'lat/lon required' }, 400);
 
-  const key = process.env.KMA_API_KEY;
+  const key = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env?.KMA_API_KEY;
   if (!key) return json({ error: 'KMA_API_KEY not configured' }, 500);
 
   const { nx, ny } = latLonToGrid(lat, lon);

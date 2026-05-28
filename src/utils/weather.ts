@@ -165,6 +165,14 @@ function iconFromMain(main: string): string {
   return 'sun';
 }
 
+function iconFromWmoCode(code: number): string {
+  if (code >= 71 && code <= 77) return 'snow';
+  if (code === 85 || code === 86) return 'snow';
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95 && code <= 99)) return 'rain';
+  if (code === 2 || code === 3 || code === 45 || code === 48 || (code >= 51 && code <= 57)) return 'cloud';
+  return 'sun';
+}
+
 export async function fetchWeather(apiKey: string): Promise<Weather> {
   const pos = await new Promise<GeolocationPosition>((res, rej) =>
     navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000 })
@@ -174,10 +182,10 @@ export async function fetchWeather(apiKey: string): Promise<Weather> {
   const [weatherRes, airRes, meteoResult, kmaResult] = await Promise.all([
     fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=kr`),
     fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`),
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=uv_index&timezone=auto`)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=uv_index&hourly=temperature_2m,precipitation,precipitation_probability,weather_code&timezone=auto&forecast_hours=8`)
       .then(r => r.json())
       .catch((err) => {
-        console.warn('[weather] open-meteo uv fetch failed:', err);
+        console.warn('[weather] open-meteo fetch failed:', err);
         return null;
       }),
     fetch(`/api/kma-weather?lat=${lat}&lon=${lon}`)
@@ -235,18 +243,43 @@ export async function fetchWeather(apiKey: string): Promise<Weather> {
     }
   }
 
-  // 시간별 예보: KMA 우선, 실패 시 OpenWeather 기반 폴백
+  // 시간별 예보: KMA 우선 → 실패 시 Open-Meteo → 최후엔 OpenWeather 기반 단일카드
   let hourly: HourlyData[];
   if (Array.isArray(kmaResult?.hourly) && kmaResult.hourly.length > 0) {
     hourly = kmaResult.hourly;
     console.log('[weather] KMA hourly:', JSON.stringify(hourly));
   } else {
-    hourly = [{
-      h: hour,
-      t: temp,
-      c: iconFromMain(owMain),
-      r: condition === 'rain' || condition === 'snow' ? 80 : 0,
-    }];
+    console.warn('[weather] KMA hourly empty, falling back to Open-Meteo');
+    const meteoHourly = meteoResult?.hourly;
+    if (meteoHourly?.time?.length) {
+      const probAt = (i: number): number => {
+        const mm = meteoHourly.precipitation?.[i] ?? 0;
+        const prob = meteoHourly.precipitation_probability?.[i] ?? 0;
+        return mm < 0.1 ? 0 : prob;
+      };
+      hourly = [{
+        h: hour,
+        t: temp,
+        c: iconFromMain(owMain),
+        r: probAt(0),
+      }];
+      for (let i = 1; i < meteoHourly.time.length && hourly.length < 8; i++) {
+        const tStr = meteoHourly.time[i] as string;
+        hourly.push({
+          h: parseInt(tStr.split('T')[1].split(':')[0], 10),
+          t: Math.round(meteoHourly.temperature_2m?.[i] ?? 0),
+          c: iconFromWmoCode(meteoHourly.weather_code?.[i] ?? 0),
+          r: probAt(i),
+        });
+      }
+    } else {
+      hourly = [{
+        h: hour,
+        t: temp,
+        c: iconFromMain(owMain),
+        r: condition === 'rain' || condition === 'snow' ? 80 : 0,
+      }];
+    }
   }
 
   return { temp, feelsLike, condition, rainPct, uv, pm, hour, location, hourly };
