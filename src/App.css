@@ -191,7 +191,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .age-leg-name { color: var(--text-1); font-weight: 700; }
 
 .cal-card { background: var(--card); border-radius: var(--radius-card); padding: 18px 16px 16px; }
-.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; }
+.cal-nav { display: flex; align-items: center; gap: 8px; }
+.cal-nav-btn { width: 28px; height: 28px; border-radius: 50%; background: var(--card); color: var(--text-2); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; padding: 0; }
+.cal-nav-btn:active:not(:disabled) { background: var(--card-2); }
+.cal-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.cal-nav-btn.flip svg { transform: rotate(180deg); }
 .cal-title { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; color: var(--text-1); }
 .cal-count { display: inline-flex; align-items: center; gap: 4px; background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 700; padding: 4px 10px 4px 8px; border-radius: 999px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
@@ -209,16 +214,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 @keyframes stamp-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
 .walk-done-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  margin: 16px auto 0;
-  padding: 8px 16px;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px;
   background: #E8EEFF; color: #2C5BFF;
   border-radius: 999px;
-  font-size: 13px; font-weight: 700;
+  font-size: 12px; font-weight: 700;
   letter-spacing: -0.2px;
 }
 .cal-card { display: flex; flex-direction: column; align-items: stretch; }
-.cal-card > .walk-done-badge { align-self: center; }
 
 .ad-overlay { position: absolute; inset: 0; background: #1A1D21; color: #fff; display: flex; flex-direction: column; z-index: 50; animation: ad-fade 0.22s ease; }
 @keyframes ad-fade { from { opacity: 0; } to { opacity: 1; } }
