@@ -215,14 +215,15 @@ export default async function handler(req: Request): Promise<Response> {
   const kst = getKSTParts();
   const nowKey = `${ymd(kst.year, kst.month, kst.day)}${pad2(kst.hour)}00`;
   const sortedKeys = Array.from(slots.keys()).filter(k => k >= nowKey).sort();
-  const hourly = sortedKeys.slice(0, 8).map(k => {
+  const hourly = sortedKeys.slice(0, 8).map((k, i) => {
     const s = slots.get(k)!;
     const pty = s.PTY ?? '0';
     const condition = parseInt(pty, 10) > 0 ? ptyToCondition(pty) : skyToCondition(s.SKY ?? '1');
+    // "지금" 카드(i=0)는 초단기실황(관측값) 우선 — 예보보다 정확
     return {
       h: parseInt(s.time.slice(0, 2), 10),
-      t: Math.round(s.T1H ?? currentTemp),
-      c: iconFor(condition),
+      t: i === 0 ? Math.round(currentTemp) : Math.round(s.T1H ?? currentTemp),
+      c: i === 0 ? iconFor(currentCondition) : iconFor(condition),
       r: Math.round(s.POP ?? 0),
     };
   });
