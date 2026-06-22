@@ -185,7 +185,10 @@ export default async function handler(req: Request): Promise<Response> {
   for (const it of ncstItems) ncstMap[it.category] = it.obsrValue;
   const currentTemp = parseFloat(ncstMap.T1H ?? '0');
   const currentPty = ncstMap.PTY ?? '0';
-  const currentCondition = ptyToCondition(currentPty);
+  // 현재 하늘상태(SKY)는 실황에 없으므로 아래에서 가까운 예보 슬롯으로 보강
+  // WSD: 풍속(m/s), REH: 습도(%) — 초단기실황에서 직접 관측값
+  const currentWind = parseFloat(ncstMap.WSD ?? 'NaN');
+  const currentHumidity = parseFloat(ncstMap.REH ?? 'NaN');
 
   // 시간별 예보: fcst(초단기, 6h) + vilage(단기, 3d) 합치기
   // key = `${fcstDate}${fcstTime}`, value = { T1H, SKY, PTY, POP }
@@ -215,6 +218,14 @@ export default async function handler(req: Request): Promise<Response> {
   const kst = getKSTParts();
   const nowKey = `${ymd(kst.year, kst.month, kst.day)}${pad2(kst.hour)}00`;
   const sortedKeys = Array.from(slots.keys()).filter(k => k >= nowKey).sort();
+
+  // 현재 condition: 강수(PTY)는 실황 관측값 우선, 비/눈 없으면 가장 가까운 예보의 SKY로 흐림 판단
+  // (실황 T1H에는 SKY가 없어 PTY만으로는 흐린 날도 '맑음'으로 나오는 문제 보정)
+  const nearestSky = sortedKeys.length ? slots.get(sortedKeys[0])?.SKY : undefined;
+  const currentCondition = parseInt(currentPty, 10) > 0
+    ? ptyToCondition(currentPty)
+    : skyToCondition(nearestSky ?? '1');
+
   const hourly = sortedKeys.slice(0, 8).map((k, i) => {
     const s = slots.get(k)!;
     const pty = s.PTY ?? '0';
@@ -237,13 +248,18 @@ export default async function handler(req: Request): Promise<Response> {
       temp: Math.round(currentTemp),
       condition: currentCondition,
       icon: iconFor(currentCondition),
+      wind: isNaN(currentWind) ? null : Math.round(currentWind * 10) / 10,
+      humidity: isNaN(currentHumidity) ? null : Math.round(currentHumidity),
     },
     hourly,
   }, 200, hasRealData);
 }
 
 function json(data: unknown, status = 200, cacheable = false): Response {
-  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  };
   if (cacheable && status === 200) {
     // Vercel CDN 5분 캐시 + 60초 stale-while-revalidate
     headers['Cache-Control'] = 'public, s-maxage=300, stale-while-revalidate=60';
