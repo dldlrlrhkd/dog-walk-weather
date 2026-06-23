@@ -183,7 +183,7 @@ export default async function handler(req: Request): Promise<Response> {
   // 현재값 (초단기실황)
   const ncstMap: Record<string, string> = {};
   for (const it of ncstItems) ncstMap[it.category] = it.obsrValue;
-  const currentTemp = parseFloat(ncstMap.T1H ?? '0');
+  const ncstTemp = parseFloat(ncstMap.T1H ?? ''); // 실황 기온 (없으면 NaN → 아래서 예보로 폴백)
   const currentPty = ncstMap.PTY ?? '0';
   // 현재 하늘상태(SKY)는 실황에 없으므로 아래에서 가까운 예보 슬롯으로 보강
   // WSD: 풍속(m/s), REH: 습도(%) — 초단기실황에서 직접 관측값
@@ -226,6 +226,10 @@ export default async function handler(req: Request): Promise<Response> {
     ? ptyToCondition(currentPty)
     : skyToCondition(nearestSky ?? '1');
 
+  // 실황 기온이 없으면 0도로 떨어지지 않게 가장 가까운 예보 기온으로 폴백 (number | undefined)
+  const nearestT1H = sortedKeys.length ? slots.get(sortedKeys[0])?.T1H : undefined;
+  const currentTemp = !isNaN(ncstTemp) ? ncstTemp : nearestT1H;
+
   const hourly = sortedKeys.slice(0, 8).map((k, i) => {
     const s = slots.get(k)!;
     const pty = s.PTY ?? '0';
@@ -233,7 +237,7 @@ export default async function handler(req: Request): Promise<Response> {
     // "지금" 카드(i=0)는 초단기실황(관측값) 우선 — 예보보다 정확
     return {
       h: parseInt(s.time.slice(0, 2), 10),
-      t: i === 0 ? Math.round(currentTemp) : Math.round(s.T1H ?? currentTemp),
+      t: i === 0 ? Math.round(currentTemp ?? s.T1H ?? 0) : Math.round(s.T1H ?? currentTemp ?? 0),
       c: i === 0 ? iconFor(currentCondition) : iconFor(condition),
       r: Math.round(s.POP ?? 0),
     };
@@ -245,7 +249,7 @@ export default async function handler(req: Request): Promise<Response> {
   return json({
     grid: { nx, ny },
     current: {
-      temp: Math.round(currentTemp),
+      temp: currentTemp !== undefined ? Math.round(currentTemp) : null,
       condition: currentCondition,
       icon: iconFor(currentCondition),
       wind: isNaN(currentWind) ? null : Math.round(currentWind * 10) / 10,
